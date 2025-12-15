@@ -4,9 +4,14 @@ from fastapi.staticfiles import StaticFiles
 from config import ACCOUNTS, get_account_by_id
 from market_data import get_portfolio_data
 
+import os
+
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+else:
+    print("Warning: 'static' directory not found. Static files will not be served.")
 templates = Jinja2Templates(directory="templates")
 
 # Cache mechanism (Basic)
