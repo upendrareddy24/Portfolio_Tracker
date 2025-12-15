@@ -12,6 +12,7 @@ from portfolio_engine import TickerData, OptionsSnapshot, analyze_ticker, SetupD
 # (Ideally import from config.py)
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 TWELVE_DATA_API_KEY = os.getenv('TWELVE_DATA_API_KEY')
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY', 'LFFBABGTSL3S1295')
 
 # Defines the universe to scan. 
 # Expanded universe to ensure tabs are populated with WATCH candidates.
@@ -73,7 +74,47 @@ def fetch_ticker_data_triple_api(symbol: str) -> Optional[TickerData]:
         except Exception as e:
             print(f"Twelve Data failed for {symbol}: {e}")
 
-    # 3. Try Yahoo Finance
+    # 3. Try Alpha Vantage
+    if df is None and ALPHA_VANTAGE_API_KEY:
+        try:
+            # Alpha Vantage API
+            # Note: Free tier is 25 requests/day or 5/min. Use sparingly.
+            url = "https://www.alphavantage.co/query"
+            params = {
+                "function": "TIME_SERIES_DAILY",
+                "symbol": symbol,
+                "outputsize": "compact", # 100 data points is enough for indicators
+                "apikey": ALPHA_VANTAGE_API_KEY,
+                "datatype": "json"
+            }
+            
+            resp = requests.get(url, params=params, timeout=10)
+            data = resp.json()
+            
+            if "Time Series (Daily)" in data:
+                df = pd.DataFrame(data["Time Series (Daily)"]).T
+                # Columns: 1. open, 2. high, ...
+                df = df.rename(columns={
+                    "1. open": "Open",
+                    "2. high": "High",
+                    "3. low": "Low",
+                    "4. close": "Close",
+                    "5. volume": "Volume"
+                })
+                # Numeric conversion
+                for col in ["Open", "High", "Low", "Close", "Volume"]: 
+                    df[col] = pd.to_numeric(df[col])
+                
+                df.index = pd.to_datetime(df.index)
+                df.index.name = "Date"
+                df.sort_index(inplace=True)
+                
+                print(f"✅ Fetched {symbol} from Alpha Vantage")
+                
+        except Exception as e:
+             print(f"Alpha Vantage failed for {symbol}: {e}")
+
+    # 4. Try Yahoo Finance
     if df is None:
         try:
             # Use auto_adjust=True to silence warning and get adjusted close
