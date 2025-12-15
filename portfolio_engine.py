@@ -396,8 +396,8 @@ def analyze_ticker(td: TickerData, opt: OptionsSnapshot) -> SetupDecision:
         tags=list(set(tags)),
         pattern=pattern,
         reasons=reasons,
-        price=td.price,
-        changePct=td.changePct,
+        price=round(td.price, 2),
+        changePct=round(td.changePct, 2),
         state=state,
         setupStage=setup_stage
     )
