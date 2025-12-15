@@ -1,39 +1,49 @@
 from fastapi import FastAPI, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-import uvicorn
-import os
-import random
-
 from config import ACCOUNTS, get_account_by_id
-from market_data import get_tickers_for_strategy
+from market_data import get_portfolio_data
 
-app = FastAPI(title="Portfolio Tracker")
+app = FastAPI()
 
-# Mount static files
-try:
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-except RuntimeError:
-    pass # Static dir might not exist yet
-
-# Templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-@app.get("/", response_class=HTMLResponse)
+# Cache mechanism (Basic)
+CACHE = {
+    "data": {},
+    "timestamp": 0
+}
+CACHE_DURATION = 300 # 5 minutes
+
+@app.get("/")
 async def read_root(request: Request, account_id: int = 1):
+    
+    import time
+    now = time.time()
+    
+    # Check cache (simplified for multi-account structure)
+    if not CACHE["data"] or (now - CACHE["timestamp"] > CACHE_DURATION):
+        print("Refreshing Portfolio Logic Data...")
+        CACHE["data"] = get_portfolio_data()
+        CACHE["timestamp"] = now
+        
+    portfolio_buckets = CACHE["data"]
+    
+    # Get current account config
     current_account = get_account_by_id(account_id)
     
-    # Fetch real data based on the account's strategy
-    tickers = get_tickers_for_strategy(current_account["strategy"])
+    # Get tickers for this account logic
+    # buckets is {1: [Decision, ...], 2: [...]}
+    tickers = portfolio_buckets.get(account_id, [])
+    
+    # Calculate summary stats (optional)
+    total_tickers = len(tickers)
     
     return templates.TemplateResponse("index.html", {
-        "request": request, 
-        "title": "Portfolio Tracker",
+        "request": request,
         "accounts": ACCOUNTS,
         "current_account": current_account,
-        "tickers": tickers
+        "tickers": tickers,
+        "last_updated": datetime.fromtimestamp(CACHE["timestamp"]).strftime('%H:%M:%S')
     })
-
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
