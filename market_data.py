@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import requests
 import os
+import concurrent.futures
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from portfolio_engine import TickerData, OptionsSnapshot, analyze_ticker, SetupDecision
@@ -75,13 +76,17 @@ def fetch_ticker_data_triple_api(symbol: str) -> Optional[TickerData]:
     # 3. Try Yahoo Finance
     if df is None:
         try:
-            df = yf.download(symbol, period="2y", progress=False)
+            # Use auto_adjust=True to silence warning and get adjusted close
+            df = yf.download(symbol, period="2y", progress=False, auto_adjust=True)
             if df.empty: return None
             # Handle MultiIndex if needed (though single ticker usually doesn't return multiindex columns properly in new yf versions sometimes)
             if isinstance(df.columns, pd.MultiIndex):
-                df = df.xs(symbol, axis=1, level=1)
+                try:
+                    df = df.xs(symbol, axis=1, level=1)
+                except:
+                    pass # Keep structure if xs fails
         except Exception as e:
-            print(f"Yahoo failed for {symbol}: {e}")
+            # print(f"Yahoo failed for {symbol}: {e}")
             return None
 
     if df is None or df.empty:
@@ -168,21 +173,38 @@ def fetch_options_snapshot(symbol: str) -> OptionsSnapshot:
     except:
         return OptionsSnapshot(hasOptions=False)
 
+def process_single_ticker(ticker: str) -> Optional[SetupDecision]:
+    """Helper to process a single ticker for threading"""
+    try:
+        td = fetch_ticker_data_triple_api(ticker)
+        if not td: return None
+        opt = fetch_options_snapshot(ticker)
+        return analyze_ticker(td, opt)
+    except Exception as e:
+        print(f"Error processing {ticker}: {e}")
+        return None
+
 def get_portfolio_data() -> Dict[int, List[SetupDecision]]:
     """
     Main entry point suitable for main.py
-    Scans master list -> Runs Logic -> buckets into accounts
+    Scans master list in PARALLEL -> Runs Logic -> buckets into accounts
     """
     decisions = []
     
-    for ticker in MASTER_TICKER_LIST:
-        td = fetch_ticker_data_triple_api(ticker)
-        if not td: continue
+    # Concurrent fetching with ThreadPoolExecutor
+    # Using 20 threads to speed up I/O bound requests significantly
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        future_to_ticker = {executor.submit(process_single_ticker, ticker): ticker for ticker in MASTER_TICKER_LIST}
         
-        opt = fetch_options_snapshot(ticker)
-        
-        decision = analyze_ticker(td, opt)
-        decisions.append(decision)
+        for future in concurrent.futures.as_completed(future_to_ticker):
+            try:
+                res = future.result()
+                if res:
+                    decisions.append(res)
+            except Exception as e:
+                # Log but don't crash
+                # ticker = future_to_ticker[future]
+                pass
         
     # Bucket by account
     buckets = {i: [] for i in range(9)} # 0-8
