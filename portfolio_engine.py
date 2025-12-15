@@ -166,6 +166,70 @@ def detect_pattern(td: TickerData) -> PatternResult:
     
     return pr
 
+# -------------------------------------------------------------------------
+# 2.5) Plan Generator
+# -------------------------------------------------------------------------
+def build_plan(account_id: int, td: TickerData, pattern: PatternResult) -> Tuple[List[str], List[str], List[str]]:
+    
+    entry = []
+    stop = []
+    exit_plan = []
+    
+    pivot = pattern.pivotPrice if pattern.pivotPrice else td.recentHigh20
+    
+    if account_id == 1: # SH Swing
+        entry = [
+            "Entry1: reclaim EMA9/EMA21 + green candle close",
+            "Entry2: break above prior day high",
+            "Volume confirm: today vol >= 1.5x avg20"
+        ]
+        stop = ["Stop: close below EMA9", "Hard stop: -2R or below last swing low"]
+        exit_plan = ["Take profit: +3% to +7%", "Exit: close below EMA9"]
+        
+    elif account_id == 2: # Swing
+        entry = ["Entry: pullback to EMA21 or SMA50", "Trigger: break of pullback trendline"]
+        stop = ["Stop: close below EMA21; deep pullback below SMA50"]
+        exit_plan = ["Target: +10% to +20%", "Exit: breakdown below EMA21"]
+        
+    elif account_id == 3: # POS BO
+        entry = [f"Entry: buy breakout above pivot {pivot:.2f} with vol >= 1.4x", "Add: if holds pivot"]
+        stop = ["Stop: -7% to -8% (O'Neil rule)", "Exit early: fail back into base"]
+        exit_plan = ["Take profit: partial +20%", "Hold: while price above EMA21"]
+        
+    elif account_id == 4: # POS HVOL
+        entry = ["Entry: after HV demand day, buy tight pullback", "Confirm: supply dry up"]
+        stop = ["Stop: close below EMA21 or demand-day low"]
+        exit_plan = ["Exit: distribution spike or RS roll over"]
+        
+    elif account_id == 5: # POS PAT
+        entry = ["Entry: pattern pivot breakout", "Confirm: volume expansion"]
+        stop = ["Stop: -7% to -8% or pattern invalidation"]
+        exit_plan = ["Exit: failure back into base"]
+        
+    elif account_id == 6: # INV
+        entry = ["Entry: add on pullbacks to SMA50", "Prefer: rising RS"]
+        stop = ["Stop: major trend break (SMA50 down + price < SMA200)"]
+        exit_plan = ["Exit: RS deteriorates", "Trim: climactic run"]
+        
+    elif account_id == 7: # OPT Swing
+        entry = ["Entry: breakout/pullback near SMA50", "Options: spread <=5%, OI>=1000"]
+        stop = ["Stop: underlying closes below SMA50", "Opt Stop: -30% premium"]
+        exit_plan = ["Take profit: +30%-50% option gain", "Time stop: 3-5 days no move"]
+        
+    elif account_id == 8: # Lottery
+        entry = ["Entry: intraday break + RVOL spike", "Rules: NO earnings"]
+        stop = ["Hard stop: underlying loses VWAP", "Opt Stop: -20% premium"]
+        exit_plan = ["Exit quickly: +15% to +30%", "Time stop: end of day"]
+        
+    else:
+        entry = ["Watch only"]
+        
+    return entry, stop, exit_plan
+
+# -------------------------------------------------------------------------
+# 3) Scoring Engine
+# -------------------------------------------------------------------------
+
 def options_liquidity_tag(opt: OptionsSnapshot) -> Tuple[bool, List[str]]:
     tags = []
     if not opt.hasOptions:
@@ -179,10 +243,6 @@ def options_liquidity_tag(opt: OptionsSnapshot) -> Tuple[bool, List[str]]:
     
     good = (opt.spreadPct <= OPT_MAX_SPREAD_PCT) and (opt.openInterest >= OPT_MIN_OI)
     return good, tags
-
-# -------------------------------------------------------------------------
-# 3) Scoring Engine
-# -------------------------------------------------------------------------
 
 def compute_score(td: TickerData, opt: OptionsSnapshot, pattern: PatternResult) -> Tuple[int, List[str], List[str]]:
     tags = []
