@@ -121,7 +121,7 @@ def rs_score(td: TickerData) -> int:
 def volume_score(td: TickerData) -> int:
     # Simplified volume analysis since we might not have full history in this iteration
     s = 0
-    if td.volumne >= 1.5 * td.avgVol20: s += 8
+    if td.volume >= 1.5 * td.avgVol20: s += 8
     
     # Placeholder for detailed up/down volume analysis
     # Assuming slight bullish bias if price is up
