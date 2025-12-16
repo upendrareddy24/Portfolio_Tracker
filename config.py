@@ -1,7 +1,7 @@
-ACCOUNTS = [
+[
     {
         "id": 1, 
-        "name": "SH Swings", 
+        "name": "SH Swings 2", 
         "strategy": "SH Swing", 
         "holding_period": "1-5 Days", 
         "color": "text-blue-400",
@@ -10,7 +10,7 @@ ACCOUNTS = [
     },
     {
         "id": 2, 
-        "name": "Swing/Sq", 
+        "name": "Swing/Sq 3", 
         "strategy": "Swing/Sq", 
         "holding_period": "2-20 Days", 
         "color": "text-green-400",
@@ -19,7 +19,7 @@ ACCOUNTS = [
     },
     {
         "id": 3, 
-        "name": "POS BO/SQ", 
+        "name": "POS BO/SQ 4", 
         "strategy": "POS- BO/SQ", 
         "holding_period": "20-60 Days", 
         "color": "text-purple-400",
@@ -28,7 +28,7 @@ ACCOUNTS = [
     },
     {
         "id": 4, 
-        "name": "POS HVOL", 
+        "name": "POS HVOL 5", 
         "strategy": "POS-HVOL", 
         "holding_period": "5-20 Days", 
         "color": "text-yellow-400",
@@ -37,7 +37,7 @@ ACCOUNTS = [
     },
     {
         "id": 5, 
-        "name": "POS PAT", 
+        "name": "POS PAT 6", 
         "strategy": "POS-PAT", 
         "holding_period": "10-40 Days", 
         "color": "text-pink-400",
@@ -46,7 +46,7 @@ ACCOUNTS = [
     },
     {
         "id": 6, 
-        "name": "INV", 
+        "name": "INV 7", 
         "strategy": "INV", 
         "holding_period": "3M - 2Y", 
         "color": "text-indigo-400",
@@ -55,7 +55,7 @@ ACCOUNTS = [
     },
     {
         "id": 7, 
-        "name": "OPT Swing", 
+        "name": "OPT Swing 8", 
         "strategy": "OPT-Swing", 
         "holding_period": "3-20 Days", 
         "color": "text-orange-400",
