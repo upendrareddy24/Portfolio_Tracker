@@ -1,4 +1,4 @@
-[
+ACCOUNTS = [
     {
         "id": 1, 
         "name": "SH Swings 2", 

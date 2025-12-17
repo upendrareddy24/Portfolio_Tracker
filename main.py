@@ -56,3 +56,7 @@ async def read_root(request: Request, account_id: int = 1):
             "last_updated": datetime.fromtimestamp(CACHE["timestamp"]).strftime('%H:%M:%S')
         }
     )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
