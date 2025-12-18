@@ -80,7 +80,7 @@ tickerForm.onsubmit = (e) => {
 };
 
 function saveAndRefresh() {
-    localStorage.setItem('liveStockpicksData', JSON.stringify(portfolio));
+    localStorage.setItem('stellarPortfolio', JSON.stringify(portfolio));
     renderDashboard();
 }
 
